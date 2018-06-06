@@ -22,7 +22,7 @@ JIRA_MAX_RESULTS = 100
 require 'rubygems'
 require 'getoptlong'
 require 'yaml'
-require 'jira'
+require 'jira-ruby'
 require 'json'
 require 'tempfile'
 require File.join(File.dirname(__FILE__), '../../config_store')
@@ -141,8 +141,8 @@ class JiraToJxaApp
       jira_id = row.key
       title   = row.summary
       description = row.description
-      task_name = "#{jira_id}: #{title}"
-      task_notes = "#{config_store.jira_url}/browse/#{jira_id}\n#{description}"
+      task_name = title
+      task_notes = "Ticket: #{config_store.jira_url}/browse/#{jira_id}\n\n#{description}"
 
       priority = row.priority
       priority_value = priority.nil? ? 99 : priority.id.to_i

@@ -28,50 +28,76 @@ function run(input, params) {
 	var completed_stati = report_json['completed_stati']
 	if (VERBOSE) { console.log("Completed stati:"+completed_stati) }
   var app_params     = report_json['task_app_params']
-	var target_project = app_params['project_name']
+	var target_area = app_params['project_name']
   var tag_names      = app_params['tags']
 
 	var TaskApp = Application("Things3")
 	TaskApp.includeStandardAdditions = true
-	if (VERBOSE) { 	console.log("Setting target project: "+target_project) }
-	var things_project = TaskApp.projects.byName(target_project)
-	things_project.name() // To force an exception that we can see.
-	if (VERBOSE) { console.log("Setting target project: "+things_project.name()) }
+	if (VERBOSE) { 	console.log("Setting target project: "+target_area) }
+	var things_area = TaskApp.areas.byName(target_area)
+	things_area.name() // To force an exception that we can see.
+	if (VERBOSE) { console.log("Setting target project: "+things_area.name()) }
 
-	var things_tasks = TaskApp.toDos
+	var things_projects = TaskApp.projects
 
 	for (var i = report_json['results'].length - 1; i >= 0; i--) {
 		var row = report_json['results'][i]
-		var task_name = row['task_name']
-		var task_notes = row['task_notes']
-		var task_status     = row['status']
-		var task_flags = row['task_flags']
-		if (VERBOSE) { console.log("Task: "+task_name) }
-		var things_task = things_tasks.byName(task_name)
+		var project_name = row['task_name']
+		var project_notes = row['task_notes']
+		var project_status = row['status']
+		if (VERBOSE) { console.log("Task: "+project_name) }
+		var things_project = things_projects.byName(project_name)
 		try {
-			var things_name = things_task.name()
-			if (VERBOSE) { console.log("Found task: and it's " + things_task.status() + ". Setting status to " + task_status) }
-      things_task.tagNames = tag_names
-			if (completed_stati.indexOf(task_status) > 0) {
+			var things_name = things_project.name()
+			if (VERBOSE) { console.log("Found task: and it's " + things_project.status() + ". Setting status to " + project_status) }
+			if (completed_stati.indexOf(project_status) > 0) {
 				if (VERBOSE) { console.log("Marking Done") }
-                things_task.status = 'completed'
+                things_project.status = 'completed'
 			}
+			things_project.notes = project_notes
 		} catch (err) {
 			if (VERBOSE) { console.log("No task Found. "+err.message+". Adding it..") }
-			var toDo = TaskApp.ToDo({
-        name: task_name,
-        notes: task_notes,
-        project: things_project,
-        tagNames: tag_names,
-        status: ( completed_stati.indexOf(task_status) > 0 ? 'completed' : 'open' )
+			var project = TaskApp.Project({
+        name: project_name,
+        notes: project_notes,
+        area: things_area,
+        status: ( completed_stati.indexOf(project_status) > 0 ? 'completed' : 'open' )
       })
-			if (VERBOSE) { console.log("New TaskApp ToDo:"+toDo) }
-			TaskApp.toDos.push(toDo)
+			if (VERBOSE) { console.log("New TaskApp project:"+project) }
+			TaskApp.projects.push(project)
+			// Add default checklist
+			var implementTodo = TaskApp.ToDo({
+				name: 'Implementation',
+        project: project,
+        status: ( completed_stati.indexOf(project_status) > 0 ? 'completed' : 'open' )
+			})
+			var codeReviewTodo = TaskApp.ToDo({
+				name: 'Code Review',
+        project: project,
+        status: ( completed_stati.indexOf(project_status) > 0 ? 'completed' : 'open' )
+			})
+			var onQaTodo = TaskApp.ToDo({
+				name: 'Deploy to QA',
+        project: project,
+        status: ( completed_stati.indexOf(project_status) > 0 ? 'completed' : 'open' )
+			})
+			var passedQaTodo = TaskApp.ToDo({
+				name: 'Passed QA',
+        project: project,
+        status: ( completed_stati.indexOf(project_status) > 0 ? 'completed' : 'open' )
+			})
+			var shippedTodo = TaskApp.ToDo({
+				name: 'Released',
+        project: project,
+        status: ( completed_stati.indexOf(project_status) > 0 ? 'completed' : 'open' )
+			})
+			TaskApp.toDos.push(implementTodo)
+			TaskApp.toDos.push(codeReviewTodo)
+			TaskApp.toDos.push(onQaTodo)
+			TaskApp.toDos.push(passedQaTodo)
+			TaskApp.toDos.push(shippedTodo)
 			// Not found, keep going.
 		}
 	}
-
 	console.log("Finished updating "+report_json['results'].length+" tasks in Things.")
-
 }
-
